@@ -7,6 +7,7 @@ import HTMLParser
 import codecs
 import time
 import operator
+import nltk
 
 #handling of the unwanted unicodes
 chars = {

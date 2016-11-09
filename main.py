@@ -9,6 +9,7 @@ import time
 import pickle
 import operator
 import math
+import nltk
 from math import log
 from os import listdir
 from os.path import isfile, join
@@ -183,4 +184,3 @@ if __name__ == '__main__':
 	saveToPickle(mappingsDict)
 
 	print "\n\nCompleted in ",time.clock() - start
-	
