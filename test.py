@@ -34,6 +34,22 @@ def loadFromPickle():
 		mappingsDict = pickle.load(f)
 
 
+def printData(present,length,inputTextTokens,inter):
+
+	count = 0
+	global mappingsDict
+	if present == length-1:
+		for eachWord in mappingsDict[inputTextTokens[present]][:3]:
+			for e in inter:
+				print e,
+			print eachWord
+		return
+	else:
+		for eachWord in mappingsDict[inputTextTokens[present]][:3]:
+			inter.append(eachWord)
+			printData(present+1,length,inputTextTokens,inter)
+			inter.pop()
+
 def translate(text):
 
 	# Get the mapping dictionary
@@ -42,14 +58,20 @@ def translate(text):
 	# Search the word in the dictionary and output the translation
 	inputTextTokens = tokenize(text.lower(), ' ')
 
-	translatedText = list()
-	for token in inputTextTokens:
-		if token in mappingsDict:
-			translatedText.append(mappingsDict[token][0])
+	# translatedText = list()
+	# for token in inputTextTokens:
+	# 	if token in mappingsDict:
+	# 		translatedText.append(mappingsDict[token][0])
 
-	translatedStatement = ' '.join(translatedText)
-	translatedStatement = translatedStatement.decode("utf-8")
-	print translatedStatement
+	# translatedStatement = ' '.join(translatedText)
+	# translatedStatement = translatedStatement.decode("utf-8")
+	# print translatedStatement
+	inter = []
+	printData(0,len(inputTextTokens),inputTextTokens,inter)
+
+
+
+
 
 
 # Main Function
