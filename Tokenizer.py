@@ -34,14 +34,21 @@ regexString = [
  	r'[a-zA-Z\.]{1,3}\.', # For abbreviations like Dr. or e.g.
     u'(?:[a-z][a-z\'(\u2019)\-_]+[a-z])', # words with - and '   
     r'(?:[\w_]+)', # other words
-    r'(?:\S)' # anything else
+    #r'(?:\S)' # anything else
 ]
 
 tokensRegex = re.compile(r'('+'|'.join(regexString)+')', re.VERBOSE | re.IGNORECASE | re.UNICODE)
 
 
-# Returns the list of tokens
-def tokenize(data):
+def tokenizeOnSpace(data):
+    return data.split(' ')
 
-	tokensList = tokensRegex.findall(data)
-	return tokensList
+
+# Returns the list of tokens
+def tokenize(data, delimiter):
+
+    if delimiter == ' ':
+       tokensList = tokenizeOnSpace(data)
+    else:
+	   tokensList = tokensRegex.findall(data)
+    return tokensList

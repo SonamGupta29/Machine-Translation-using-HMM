@@ -13,16 +13,103 @@ from math import log
 from os import listdir
 from os.path import isfile, join
 
-
 # Module files
 from Tokenizer import *
 from inputMethod import *
 from makeNGrams import *
-from graphPlotModule import *
-from classifier import *
 
-# Global variable to store the fileNames
-fileNameList = []
+reload(sys)
+
+sys.setdefaultencoding("utf-8")
+
+# Will return the filename with the absolute path
+def getListOfFilesInDir(dirName):	
+	fileNameList = dict()
+	engFileNameList = list()
+	hinFileNameList = list()
+	for f in listdir(dirName):
+		fileName = dirName + '/' + f
+		if isfile(fileName):
+			if 'hin' in fileName:
+				hinFileNameList.append(fileName)
+			else:	
+				engFileNameList.append(fileName)
+
+	# Map the files like english to hindi
+	engFileNameList.sort()
+	hinFileNameList.sort()
+	for i in range(len(engFileNameList)):
+		fileNameList[engFileNameList[i]] = hinFileNameList[i]
+
+	return fileNameList
+
+def processData(fileMap):
+
+	# Create a dictionary which will store the mapping like {is : {hai :1, aahe : 2}}
+	mappings = dict()
+	for key, value in fileMap.iteritems():
+		engFileName = key
+		hinFileName = value
+		print "[INFO] Parsing ", engFileName, "and", hinFileName
+
+		hindiFileData = openFileNRead(hinFileName).strip('\n').split('\n')
+		englishFileData = openFileNRead(engFileName).lower().strip('\n').split('\n')
+
+		totalSentences = len(hindiFileData)
+
+		# leave the header, and just consider the statement
+		for i in range(1, totalSentences, 1):
+			engSentence = englishFileData[i].split('\t')[1]
+			hinSentence = hindiFileData[i].split('\t')[1]
+			# print engSentence, hinSentence
+
+			# Currently we won't use the tag, just use word
+			engtokens = tokenize(engSentence.strip(), ' ')
+			hintokens = tokenize(hinSentence.strip(), ' ')
+			for engtoken in engtokens:
+				if engtoken.count('\\') == 1:
+					eword, etag = engtoken.split('\\')
+				# Coz the word may be like //jj
+				if engtoken.count('\\') == 2:
+					eword, eword1, etag = engtoken.split('\\')
+					eword = '\\'
+				eword = eword.lower()
+				if eword not in mappings:
+					mappings[eword] = dict()
+
+				for hintoken in hintokens:
+					if hintoken.count('\\') == 1:
+						hword, htag = hintoken.split('\\')
+					# Coz the word may be like //jj
+					if hintoken.count('\\') == 2:
+						hword, hword1, htag = hintoken.split('\\')
+						hword = '\\'
+					# No concept of lower in hindi, :D
+					# word = word.lower()
+					if hword not in u'\u0964':
+						if hword in mappings[eword]:
+							mappings[eword][hword] = mappings[eword][hword] + 1
+						else:
+							mappings[eword][hword] =  1
+
+	# For every english word just store the top 10 words, like champion list
+	mappingsDict = dict()
+	for key, value in mappings.iteritems():
+		engWord = key		
+		sorted_x = sorted(value.items(), key = operator.itemgetter(1), reverse = True)
+		if len(sorted_x) > 10:
+			sorted_x = sorted_x[:10]
+		# Get just the hindi word, now we don't need the frequency
+		sorted_x = [i[0] for i in sorted_x]
+		mappingsDict[engWord] = sorted_x
+
+	return mappingsDict
+
+
+def saveToPickle(tostore):
+	with open('PickleFiles/mappings.pickle', 'wb') as f:
+		pickle.dump(tostore, f)
+
 
 def init():
 
@@ -74,61 +161,25 @@ def init():
 
 
 
-# Plot the graph from each grams
-def getGramsNPlotGraph():
-
-	inputPkl = open('PickleFiles/countOfGrams.pkl', 'rb')
-	countGramDict = pickle.load(inputPkl)
-	inputPkl.close()
-	
-	fileNameList = openFileNRead("fileNames").split('\n');
-
-	for i in range(6):
-
-		for fileName in fileNameList:
-
-			# read python dict back from the file
-			inputPkl = open('PickleFiles' + '/' + fileName + '_' + str(i) + '.pkl', 'rb')
-			fileGramDict = pickle.load(inputPkl)
-			
-			sortedFileGramDictValues = list(fileGramDict.values())
-			sortedFileGramDictValues.sort(reverse = True)			
-			rank = [math.log(y + 1, 2) for y in range(len(sortedFileGramDictValues))]
-
-			# With smoothing see the division
-			frequency = [math.log(value, 2) / float(countGramDict[fileName][i]) for value in  sortedFileGramDictValues]
-			
-			# Without smoothing - Currently commeneted out, as different author we need to smooth the frequenct so consider the probabilities
-			#frequency = [math.log(value, 2) for value in  sortedFileGramDictValues]
-
-			plotGraph(rank, frequency, 'Frequecy', 'Rank', 'Rank vs Frequecy (' + str(i + 1) + '- Grams )')
-						
-			inputPkl.close()
-
-		#Show the graph
-		showGraph()
-
-
-
 # Main Function
 if __name__ == '__main__':
 
 	# Start the timer
 	start = time.clock()
+
+	# Get the directory name
+	dirName = ""
 	
-	# Process the text and form the pickle files ONLY ONE TIME PROCESS
-	#init()
+	try:
+		dirName = sys.argv[1]
+	except Exception, e:
+		dirName = raw_input("Enter the directory : ")
 
-	# Plot the graph for the all the files and for all the grams
-	#getGramsNPlotGraph()
-
-	# For checking the text to which author it belongs also just check for the 
-	# Take the input from the file 
-
-	fileName = raw_input("Enter the filename : ")
-	text = openFileNRead(fileName)
-
-	# Classify the text 	
-	classify(text)
+	fileMap = getListOfFilesInDir(dirName)
 	
+	mappingsDict = processData(fileMap)
+
+	# Store the mappings in the pickle
+	saveToPickle(mappingsDict)
+
 	print "\n\nCompleted in ",time.clock() - start
