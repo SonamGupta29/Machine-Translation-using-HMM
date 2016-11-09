@@ -183,3 +183,4 @@ if __name__ == '__main__':
 	saveToPickle(mappingsDict)
 
 	print "\n\nCompleted in ",time.clock() - start
+	
